@@ -60,20 +60,3 @@ CREATE INDEX IF NOT EXISTS idx_pricing_created_at ON pricing_records(created_at)
 
 -- Create additional performance indexes
 CREATE INDEX IF NOT EXISTS idx_pricing_records_date_range ON pricing_records(price_date DESC, store_id, product_id);
--- File Uploads Table
-CREATE TABLE IF NOT EXISTS file_uploads (
-    id VARCHAR(50) PRIMARY KEY,
-    filename VARCHAR(255) NOT NULL,
-    filepath VARCHAR(500) NOT NULL,
-    upload_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status VARCHAR(20) NOT NULL DEFAULT 'Processing',
-    errors TEXT,
-    records_imported INTEGER DEFAULT 0,
-    total_records INTEGER DEFAULT 0,
-    invalid_records INTEGER DEFAULT 0,
-    duplicates_skipped INTEGER DEFAULT 0
-);
-
--- Create indexes for file_uploads table
-CREATE INDEX IF NOT EXISTS idx_file_upload_time ON file_uploads(upload_time DESC);
-CREATE INDEX IF NOT EXISTS idx_file_upload_status ON file_uploads(status);
