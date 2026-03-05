@@ -1,0 +1,144 @@
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  color: #333;
+  min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  margin: 20px 0 10px 0;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+h1 { font-size: 32px; color: #0066cc; }
+h2 { font-size: 28px; }
+h3 { font-size: 24px; }
+h4 { font-size: 20px; }
+
+p {
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+/* Components */
+button {
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 10px 20px;
+  border: none;
+  font-weight: 500;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+}
+
+input, textarea, select {
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  padding: 10px 12px;
+  transition: all 0.3s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* Card/Panel Effects */
+.card, .panel, .modal {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover, .panel:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.mt-20 { margin-top: 20px; }
+.mb-20 { margin-bottom: 20px; }
+.p-20 { padding: 20px; }
+
+/* Status Badges */
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge-error {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.badge-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.badge-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e0e6f0 100%);
+  }
+
+  .nav-menu {
+    gap: 15px !important;
+  }
+
+  .filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .results-table {
+    font-size: 12px;
+  }
+
+  .results-table td {
+    padding: 8px 5px !important;
+  }
+}

@@ -1,0 +1,267 @@
+<div class="upload-container">
+  <div class="upload-header">
+    <h2>Upload Pricing Data</h2>
+    <button
+      class="format-info-btn"
+      (click)="toggleFormatModal()"
+      title="View CSV file format"
+    >
+      <span class="info-icon">ℹ</span>
+    </button>
+  </div>
+
+  <!-- CSV Format Modal -->
+  <div
+    *ngIf="showFormatModal"
+    class="modal-overlay"
+    (click)="closeFormatModal()"
+  >
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>CSV File Format</h3>
+        <button class="modal-close-btn" (click)="closeFormatModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Your CSV file should have the following columns:</p>
+        <ul>
+          <li><strong>Store ID</strong> - Unique identifier for the store</li>
+          <li><strong>SKU</strong> - Product SKU/identifier</li>
+          <li><strong>Product Name</strong> - Name of the product</li>
+          <li><strong>Price</strong> - Price of the product</li>
+          <li><strong>Date</strong> - Date of the pricing (YYYY-MM-DD)</li>
+        </ul>
+        <p><strong>Example:</strong></p>
+        <pre><code>Store ID,SKU,Product Name,Price,Date
+S0001,SKU-10001,Organic Apple - Gala,2.99,2026-02-25
+S0001,SKU-10002,Fresh Milk - 2L,3.49,2026-02-25</code></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-close-action-btn" (click)="closeFormatModal()">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="upload-section">
+    <p>Select a CSV file to upload pricing records from your stores</p>
+
+    <!-- Hidden file input -->
+    <input
+      type="file"
+      #fileInput
+      (change)="onFileSelected($event)"
+      accept=".csv"
+      class="file-input"
+      style="display: none"
+    />
+
+    <!-- Upload button that triggers file selection -->
+    <button
+      (click)="triggerFileSelection()"
+      [disabled]="isUploading"
+      class="upload-btn"
+    >
+      {{ isUploading ? "Uploading..." : "Upload CSV" }}
+    </button>
+
+    <div *ngIf="selectedFile" class="file-info">
+      <p><strong>Selected file:</strong> {{ selectedFile.name }}</p>
+      <p>
+        <strong>Size:</strong>
+        {{ (selectedFile.size / 1024).toFixed(2) }} KB
+      </p>
+    </div>
+  </div>
+
+  <!-- Upload Progress Section -->
+  <div
+    *ngIf="uploadProgress"
+    class="progress-section"
+    [ngClass]="uploadProgress.status"
+  >
+    <h3>
+      {{
+        uploadProgress.status === "success"
+          ? "✓ Upload Complete"
+          : uploadProgress.status === "failure"
+            ? "✗ Upload Failed"
+            : "Upload Progress"
+      }}
+    </h3>
+    <p class="status-message">{{ getProgressMessage() }}</p>
+
+    <div class="progress-bar-container">
+      <div
+        class="progress-bar"
+        [style.width.%]="getProgressPercentage()"
+        [ngClass]="uploadProgress.status"
+      >
+        <span
+          *ngIf="uploadProgress.percent !== undefined"
+          class="progress-text"
+        >
+          {{ getProgressPercentage() }}%
+        </span>
+      </div>
+    </div>
+
+    <div
+      *ngIf="
+        uploadProgress.status === 'processing' ||
+        uploadProgress.status === 'pending'
+      "
+      class="progress-details"
+    >
+      <p>Step: {{ uploadProgress.message }}</p>
+      <p>Progress: {{ uploadProgress.current }} / {{ uploadProgress.total }}</p>
+    </div>
+
+    <!-- Show completion details for successful uploads -->
+    <div
+      *ngIf="uploadProgress?.status === 'success' && uploadResponse"
+      class="completion-details"
+    >
+      <div class="summary-box">
+        <p><strong>Summary:</strong></p>
+        <ul>
+          <li>
+            ✓ Successfully imported: {{ uploadResponse.imported_records || 0 }}
+          </li>
+          <li *ngIf="uploadResponse.total_in_file">
+            Total records in file: {{ uploadResponse.total_in_file }}
+          </li>
+          <li
+            *ngIf="
+              uploadResponse.total_in_file &&
+              uploadResponse.imported_records < uploadResponse.total_in_file
+            "
+          >
+            Total ignored/skipped:
+            {{ uploadResponse.total_in_file - uploadResponse.imported_records }}
+          </li>
+          <li
+            *ngIf="
+              uploadResponse.invalid_records &&
+              uploadResponse.invalid_records > 0
+            "
+          >
+            ✗ Skipped (invalid data): {{ uploadResponse.invalid_records }}
+          </li>
+          <li
+            *ngIf="
+              uploadResponse.duplicates_skipped &&
+              uploadResponse.duplicates_skipped > 0
+            "
+          >
+            ⊘ Skipped (duplicates): {{ uploadResponse.duplicates_skipped }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Show rejection details for all-or-nothing rule violations -->
+    <div
+      *ngIf="
+        uploadProgress?.status === 'failure' &&
+        uploadResponse &&
+        uploadResponse.duplicates_skipped > 0
+      "
+      class="completion-details error"
+    >
+      <div class="summary-box">
+        <p>
+          <strong style="color: #d9534f">Upload Rejected:</strong>
+        </p>
+        <ul>
+          <li style="color: #d9534f">
+            ⊘ Duplicate records found: {{ uploadResponse.duplicates_skipped }}
+          </li>
+          <li>Total records in file: {{ uploadResponse.total_in_file }}</li>
+          <li style="color: #d9534f">
+            <strong>Zero records were imported</strong>
+          </li>
+          <li style="font-size: 12px; color: #666">
+            All records must be unique - no partial imports allowed
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Response Section - Always display when response exists -->
+  <div
+    *ngIf="uploadResponse"
+    [ngClass]="uploadResponse.success !== false ? 'success' : 'error'"
+    class="response-section"
+  >
+    <h3>{{ uploadResponse.message || "Upload Result" }}</h3>
+
+    <!-- Success Summary - only show if not already shown in completion-details -->
+    <div
+      *ngIf="
+        uploadResponse.success !== false && uploadProgress?.status !== 'success'
+      "
+      class="summary-box"
+    >
+      <p>
+        <strong>Records Imported:</strong>
+        {{ uploadResponse.imported_records || 0 }}
+        <span *ngIf="uploadResponse.total_in_file">
+          of {{ uploadResponse.total_in_file }} total records in file
+        </span>
+      </p>
+
+      <!-- Record breakdown -->
+      <div
+        *ngIf="
+          uploadResponse.invalid_records > 0 ||
+          uploadResponse.duplicates_skipped > 0
+        "
+        class="breakdown"
+      >
+        <p><strong>Record Breakdown:</strong></p>
+        <ul>
+          <li>
+            ✓ Successfully imported: {{ uploadResponse.imported_records || 0 }}
+          </li>
+          <li
+            *ngIf="
+              uploadResponse.invalid_records &&
+              uploadResponse.invalid_records > 0
+            "
+          >
+            ✗ Skipped (invalid data): {{ uploadResponse.invalid_records }}
+          </li>
+          <li
+            *ngIf="
+              uploadResponse.duplicates_skipped &&
+              uploadResponse.duplicates_skipped > 0
+            "
+          >
+            ⊘ Skipped (duplicates): {{ uploadResponse.duplicates_skipped }}
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Rejection Summary - show for rejected uploads -->
+
+    <!-- Errors and Warnings - Show all error/warning details -->
+    <div
+      *ngIf="uploadResponse.errors && uploadResponse.errors.length > 0"
+      class="errors-section"
+    >
+      <h4>Details of record(s)):</h4>
+      <div class="errors-list">
+        <div *ngFor="let error of uploadResponse.errors" class="error-item">
+          {{ error }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+</div>

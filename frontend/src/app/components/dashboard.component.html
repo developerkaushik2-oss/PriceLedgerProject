@@ -1,0 +1,68 @@
+<div class="dashboard-container">
+  <h2>Dashboard & Statistics</h2>
+
+  <div *ngIf="isLoading" class="loading">Loading statistics...</div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="stats && !isLoading" class="stats-grid">
+    <div class="stat-card">
+      <h3>Total Stores</h3>
+      <p class="stat-value">{{ stats.total_stores }}</p>
+    </div>
+
+    <div class="stat-card">
+      <h3>Total Products</h3>
+      <p class="stat-value">{{ stats.total_products }}</p>
+    </div>
+
+    <div class="stat-card">
+      <h3>Total Records</h3>
+      <p class="stat-value">{{ stats.total_pricing_records }}</p>
+    </div>
+
+    <div class="stat-card">
+      <h3>Average Price</h3>
+      <p class="stat-value">${{ stats.average_price.toFixed(2) }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="stats && stats.latest_import && !isLoading" class="latest-import">
+    <p>
+      <strong>Latest Import:</strong> {{ stats.latest_import | date: "medium" }}
+    </p>
+  </div>
+
+  <div *ngIf="countryStats && !isLoading" class="country-stats">
+    <h3>Statistics by Country</h3>
+
+    <table *ngIf="countryStats.length > 0" class="stats-table">
+      <thead>
+        <tr>
+          <th>Country</th>
+          <th>Record Count</th>
+          <th>Avg Price</th>
+          <th>Min Price</th>
+          <th>Max Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let stat of countryStats">
+          <td>
+            <strong>{{ stat.country }}</strong>
+          </td>
+          <td>{{ stat.record_count }}</td>
+          <td>${{ stat.avg_price.toFixed(2) }}</td>
+          <td>${{ stat.min_price.toFixed(2) }}</td>
+          <td>${{ stat.max_price.toFixed(2) }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="countryStats.length === 0" class="no-data">
+      No country data available yet.
+    </div>
+  </div>
+</div>

@@ -1,0 +1,120 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: priceledger-db
+    environment:
+      POSTGRES_DB: priceledger
+      POSTGRES_USER: priceledger_user
+      POSTGRES_PASSWORD: priceledger_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/sample_data.sql:/docker-entrypoint-initdb.d/02-sample_data.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U priceledger_user -d priceledger"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - priceledger-network
+
+  # Redis - Message Broker for Celery
+  redis:
+    image: redis:7-alpine
+    container_name: priceledger-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - priceledger-network
+
+  # Flask Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: priceledger-backend
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://priceledger_user:priceledger_password@db:5432/priceledger
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - priceledger-network
+    command: python run.py
+
+  # Celery Worker
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: priceledger-celery-worker
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://priceledger_user:priceledger_password@db:5432/priceledger
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - priceledger-network
+    command: celery -A app.celery_tasks worker --loglevel=info
+
+  # Celery Beat (for scheduled tasks - optional)
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: priceledger-celery-beat
+    environment:
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://priceledger_user:priceledger_password@db:5432/priceledger
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - ./uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - priceledger-network
+    command: celery -A app.celery_tasks beat --loglevel=info
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  priceledger-network:
+    driver: bridge
